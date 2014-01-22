@@ -1,0 +1,140 @@
+.TH BINREPLACE 1 "OCTOBER 2009"
+.SH NAME
+binreplace \- search and replace binary sequences in files
+.SH SYNOPSIS
+binreplace [option]... [file]...
+.SH DESCRIPTION
+.B binreplace
+searches and replaces binary sequences in files.
+The way it works is similar to
+.B sed
+, except that
+.B binreplace
+is not line-based and does to support regular expressions.
+.B binreplace
+uses prefix tree to do searching, so it is much more efficient than
+.B sed
+when there are many search strings.
+It can be used together with other UNIX text processing tools such as
+.B grep
+and
+.B sed
+to do many text processing jobs.
+.SH OPTIONS
+.TP
+.BR \-r " or " "\-R search_string replace_string"
+Replace all occurrences of search_string with replace_string.
+Escape sequence (see ESCAPE SEQUENCE section) applies to both strings when using
+.BR \-r ,
+while hexadecimal encoding applies when using
+.BR \-R .
+.TP
+.BR \-d " or " "\-D search_string"
+Delete all search_string.
+Escape sequence applies to search_string when using
+.BR \-r ,
+while hexadecimal encoding applies when using
+.BR \-R .
+.B \-d/D
+is same as
+.B \-r/R
+with an empty replace_string.
+.TP
+.BR \-f " or " "\-F listing_file"
+Load search and replace strings from listing_file.
+The format of the listing_file is tab-separated-veriable.
+Each line contains one (delete) or two (replace) fields.
+Escape sequence applies for
+.B \-f
+while hexadecimal encoding for
+.BR \-F .
+.TP
+.B \-i[SUFFIX]
+Replace files in place (makes backup if extension supplied).
+Do not use with
+.BR \-o .
+binreplace is smart enough to only create temporary file when input file
+is larger than input buffer size.
+See BUGS section for information on inode number and hardlink.
+.TP
+.B \-g
+Suppress warning of duplicate search terms.
+.TP
+.B \-s size
+Use size as input buffer size.
+The default is 1MB for file input and 8KB for pipe input.
+.TP
+.B \-o output_file
+Write output to output_file instead of
+.BR STDOUT .
+If there are mutiple input files, all output goes to this file.
+Do not use this with
+.BR \-i .
+Do not use the same output file as input file,
+use
+.B \-i
+instead.
+.TP
+.BR \-h ", " \-? " or " \-\-help
+Print this help message.
+.TP
+.B input_file
+.BR \- " does " NOT " mean " STDIN .
+.SH SEARCH RULES
+.TP
+.B REPLACE ONCE
+The replaced string will not be searched again.
+This makes swapping (e.g. \-r bird cat \-r cat bird) possible.
+.TP
+.B GREEDY LONGEST FIRST
+For two overlapping matches, the earlier one (with smaller offset)
+will be replaced.
+When two offsets are the same, the longer one is replaced.
+The order of search strings appeared on command line does not matter at all.
+.SH ESCAPE SEQUENCE
+.TP
+.B \\\\n, \\\\r, \\\\t, \\\\\\\\
+new line, carriage return, horizontal tab, backslash.
+.TP
+.B \\\\0
+The NULL character. This is useful for binary file.
+.TP
+.B \\\\xhh
+.B hh
+is the hexadecimal value of the character.
+.SH EXAMPLES
+.TP
+.B binreplace -r cow sheep -r cat dog <document.txt >foo.txt
+Replace "cow" with "sheep" and "cat" with "dog" from document.txt into foo.txt.
+.TP
+.B binreplace -r i I -r int int
+Replace "i" with "I" but keep "int" untouched.
+The order of the options does not mater.
+.TP
+.B binreplace -D 0d -i foo.txt
+Translate foo.txt from DOS format into UNIX format.
+.TP
+.B binreplace -d \\\\\\\\r -i foo.txt
+Same as above. (Use double slash to escape slash from shell)
+.TP
+.B binreplace -D 0d -R 0a 0d0a -i foo.txt
+Translate foo.txt from UNIX format into DOS format.
+.TP
+.B find /foo -type f -print0 | xargs -0 binreplace -i -r colour color
+Replace "colour" to "color" in all the files in /foo, making use of the find(1) utility.
+.TP
+.B binreplace -f listfile.txt
+Load search-term and replace-term pairs from listfile.txt.
+One pair each line; search-term and newstring are separated by tab; escape sequence applies.
+.SH BUGS
+The listing file cannot contain very long lines.
+.PP
+When using \-i option without backup, inode number may or may not change.
+That means if there is another hard link pointing to the file,
+it may or may not be modified.
+.SH AUTHOR
+Wu Yongzheng <wuyongzheng at gmail dot com>
+.SH "SEE ALSO"
+.BR sed (1),
+.BR grep (1),
+.BR tr (1),
